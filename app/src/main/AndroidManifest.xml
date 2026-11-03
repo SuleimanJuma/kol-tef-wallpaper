@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="KOL-TEF"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
+        <service
+            android:name=".WallpaperService"
+            android:label="KOL-TEF Live Wallpaper"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper" />
+        </service>
+
+    </application>
+</manifest>

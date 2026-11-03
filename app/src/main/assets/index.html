@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>kol_tef // Stealth Terminal Wallpaper</title>
+    <!-- Tailwind CSS for UI overlay controls -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Monospace Cyberpunk Aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: 'Fira Code', 'Share Tech Mono', monospace;
+            color: #00ff66;
+        }
+
+        /* CRT Overlay Scanlines */
+        .crt::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 10;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Vignette Shader Effect */
+        .vignette {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.95);
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        /* Fullscreen Canvas */
+        #matrixCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Glow Effects */
+        .glow-text {
+            text-shadow: 0 0 10px var(--theme-glow, rgba(0, 255, 102, 0.8)),
+                         0 0 25px var(--theme-glow-soft, rgba(0, 255, 102, 0.4));
+        }
+
+        .glow-box {
+            box-shadow: 0 0 20px var(--theme-glow-soft, rgba(0, 255, 102, 0.25)),
+                        inset 0 0 15px var(--theme-glow-soft, rgba(0, 255, 102, 0.15));
+        }
+
+        /* Glitch Animation */
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        .glitch-active {
+            animation: glitch-anim 0.2s infinite;
+        }
+
+        /* Terminal Subtle Flicker */
+        @keyframes subtle-flicker {
+            0% { opacity: 0.96; }
+            50% { opacity: 1; }
+            52% { opacity: 0.90; }
+            54% { opacity: 1; }
+            80% { opacity: 0.97; }
+            100% { opacity: 0.95; }
+        }
+
+        .terminal-flicker {
+            animation: subtle-flicker 4s infinite;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--theme-color, #00ff66);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="crt bg-black text-emerald-400">
+
+    <!-- Background Animation Canvas -->
+    <canvas id="matrixCanvas"></canvas>
+
+    <!-- Vignette Frame -->
+    <div class="vignette"></div>
+
+    <!-- UI Overlay Layer -->
+    <div class="relative z-20 w-full h-full flex flex-col justify-between p-4 md:p-8 pointer-events-none">
+        
+        <!-- TOP HEADER HUD (CYBERSECURITY TELEMETRY & ONION ROUTE) -->
+        <div class="flex flex-wrap justify-between items-start w-full opacity-90 pointer-events-auto gap-2">
+            <div class="flex flex-col">
+                <div class="flex items-center gap-2 text-xs md:text-sm tracking-widest font-bold">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" id="statusDot"></span>
+                    <span id="sysStatus">OPERATOR: kol_tef // [STEALTH_MODE_ACTIVE]</span>
+                </div>
+                <!-- ONION ROUTE HOPS -->
+                <div class="text-[10px] md:text-xs text-slate-400 font-mono tracking-wider mt-1 flex items-center gap-1.5 flex-wrap">
+                    <span class="text-emerald-500 font-bold">[TOR_ROUTE]:</span>
+                    <span class="bg-slate-900/80 px-1.5 py-0.5 rounded border border-emerald-500/30">127.0.0.1</span>
+                    <span>➔</span>
+                    <span class="bg-slate-900/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-cyan-400" id="hop1">NODE_ENTRY_7X</span>
+                    <span>➔</span>
+                    <span class="bg-slate-900/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-amber-400" id="hop2">PROXY_RELAY_99</span>
+                    <span>➔</span>
+                    <span class="bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/50 text-emerald-300 font-bold">[DEST: ANONYMOUS]</span>
+                </div>
+            </div>
+
+            <!-- Top Right HUD Controls -->
+            <div class="flex items-center gap-2">
+                <button id="toggleAudioBtn" class="bg-black/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 px-3 py-1.5 rounded-md text-xs backdrop-blur-md transition-all flex items-center gap-1.5 glow-box">
+                    <span id="audioIcon">🔇</span>
+                    <span id="audioStateText">SFX: OFF</span>
+                </button>
+                <button id="toggleGuideBtn" class="bg-black/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 px-3 py-1.5 rounded-md text-xs backdrop-blur-md transition-all flex items-center gap-1.5 glow-box">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>GUIDE</span>
+                </button>
+                <button id="toggleControlsBtn" class="bg-black/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 px-3 py-1.5 rounded-md text-xs backdrop-blur-md transition-all flex items-center gap-1.5 glow-box">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    <span>SETTINGS</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- CENTER HUD: BRANDING, DISAPPEARING BANNER & STAGES -->
+        <div class="flex flex-col items-center justify-center text-center my-auto terminal-flicker">
+            
+            <!-- ANONYMOUS STEALTH MASK SILHOUETTE LOGO -->
+            <div class="mb-3 opacity-80 hover:opacity-100 transition-opacity">
+                <svg class="w-12 h-12 text-emerald-400 drop-shadow-[0_0_10px_rgba(0,255,102,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                </svg>
+            </div>
+
+            <!-- CODENAME LOGO CARD -->
+            <div class="relative py-5 px-6 md:px-14 rounded-2xl bg-black/60 border border-emerald-500/40 backdrop-blur-md glow-box transition-all duration-500 max-w-xl w-full">
+                <div class="text-[10px] md:text-xs tracking-widest text-emerald-500/80 mb-1 font-mono uppercase flex justify-between items-center">
+                    <span>[ SYSTEM OPERATOR // ANONYMOUS ]</span>
+                    <span id="cryptoHash" class="text-[9px] text-slate-500 font-mono">HASH: 0x7F8...A2</span>
+                </div>
+                
+                <h1 id="brandLogo" class="hud-title text-5xl sm:text-6xl md:text-7xl font-black tracking-widest text-emerald-400 glow-text transition-all duration-300">
+                    kol_tef
+                </h1>
+
+                <div class="w-full h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent my-3"></div>
+
+                <!-- STAGE 1 BANNER CONTAINER (TYPES, GLITCHES & COMPLETELY DISAPPEARS) -->
+                <div id="stage1BannerContainer" class="min-h-[60px] flex flex-col items-center justify-center transition-all duration-700">
+                    <p id="phraseBanner" class="hud-subtext text-xs md:text-sm font-semibold tracking-wider text-emerald-300 font-mono glow-text transition-all duration-300">
+                        <!-- Typed dynamically via JS -->
+                    </p>
+                    <p id="binaryBanner" class="text-[10px] font-mono tracking-widest text-emerald-500/80 mt-1.5 break-all max-w-lg transition-all duration-300">
+                        <!-- Binary payload typed dynamically -->
+                    </p>
+                </div>
+
+                <!-- LIVE SEQUENCE STATUS MONITOR -->
+                <div class="mt-3 bg-black/90 p-2.5 rounded-lg border border-emerald-500/30 text-[10px] font-mono text-emerald-400/90 overflow-hidden text-left relative">
+                    <div class="flex justify-between items-center text-[9px] text-slate-400 mb-1 border-b border-emerald-500/20 pb-1">
+                        <span>LIFECYCLE MONITOR</span>
+                        <span id="stageStatusTag" class="text-emerald-400 font-bold">STAGE 1: ENCRYPT & DISAPPEAR</span>
+                    </div>
+                    <div id="telemetryStatus" class="truncate font-mono tracking-wider text-emerald-400 mt-0.5">
+                        [INITIALIZING ANONYMOUS STREAM BUFFER...]
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 2: FIELDS OF LIFE DOMAIN CARD -->
+            <div id="domainCard" class="mt-5 p-4 rounded-xl bg-black/80 border border-emerald-500/40 backdrop-blur-md max-w-md w-full transition-all duration-700 transform translate-y-6 opacity-0">
+                <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2 mb-2">
+                    <span class="text-[10px] text-slate-400 tracking-wider">STAGE 2 // PRAYER IN ALL FIELDS</span>
+                    <span id="domainStep" class="text-[10px] bg-emerald-950 text-emerald-400 px-2.5 py-0.5 rounded border border-emerald-500/40 font-bold">1 / 6</span>
+                </div>
+                
+                <div class="flex items-center gap-4 my-2">
+                    <div id="domainIcon" class="text-3xl md:text-4xl p-2 bg-emerald-950/60 rounded-lg border border-emerald-500/30 flex items-center justify-center min-w-[55px]">
+                        🌾
+                    </div>
+                    <div class="text-left flex-1">
+                        <div id="domainTitle" class="text-sm md:text-base font-bold text-emerald-300 tracking-wide glow-text">
+                            FARMING & AGRICULTURE
+                        </div>
+                        <div id="domainTag" class="text-[11px] text-emerald-500/80 font-mono tracking-wider">
+                            [PRAYER FOR GROWTH // HARVEST]
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Encrypted Field Payload -->
+                <div id="domainBinaryText" class="text-[10px] font-mono text-slate-400 bg-slate-950 p-2 rounded border border-emerald-500/20 truncate mt-2 text-left">
+                    BINARY: 01000110 01000001 01010010 01001101
+                </div>
+
+                <!-- Domain Progress Bar -->
+                <div class="w-full bg-emerald-950/60 rounded-full h-1.5 mt-3 overflow-hidden border border-emerald-500/20">
+                    <div id="domainProgress" class="bg-emerald-400 h-full w-0 transition-all duration-100 ease-linear"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM HUD FOOTER -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 w-full opacity-80 pointer-events-auto">
+            <div class="text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>CYPHER: <span id="cypherModeTag" class="text-emerald-400 font-bold">AES-256-GCM</span></span>
+                <span class="text-slate-600">|</span>
+                <span>SEQUENCE: <span id="sequenceLoopCount" class="text-emerald-400">LOOP #1</span></span>
+            </div>
+
+            <!-- Domain Quick Dots Navigation -->
+            <div id="domainNavDots" class="flex items-center gap-1.5">
+                <!-- Programmatically generated nav dots -->
+            </div>
+
+            <div class="text-[10px] text-slate-400 font-mono">
+                IDENTITY: <span id="identityTag" class="text-emerald-400 font-bold">kol_tef [ANONYMOUS]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS & CONTROL PANEL MODAL -->
+    <div id="controlPanel" class="fixed inset-0 z-30 bg-black/85 backdrop-blur-lg flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-black/95 border border-emerald-500/50 rounded-2xl p-6 max-w-md w-full glow-box relative text-emerald-400 flex flex-col gap-5">
+            <div class="flex justify-between items-center border-b border-emerald-500/30 pb-3">
+                <h2 class="text-base font-bold tracking-widest flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                    STEALTH HUD SETTINGS
+                </h2>
+                <button id="closeControlsBtn" class="text-slate-400 hover:text-emerald-400 text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Theme Switcher -->
+            <div class="space-y-2">
+                <label class="text-xs text-slate-300 font-mono uppercase tracking-wider">Color Palette Theme</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button data-theme="green" class="theme-btn active border border-emerald-500 bg-emerald-950/40 text-emerald-400 py-2 rounded-lg text-xs font-bold transition-all">
+                        MATRIX GREEN
+                    </button>
+                    <button data-theme="cyan" class="theme-btn border border-slate-700 bg-slate-900/40 text-slate-400 py-2 rounded-lg text-xs font-bold transition-all">
+                        CYBER CYAN
+                    </button>
+                    <button data-theme="amber" class="theme-btn border border-slate-700 bg-slate-900/40 text-slate-400 py-2 rounded-lg text-xs font-bold transition-all">
+                        AMBER GLOW
+                    </button>
+                </div>
+            </div>
+
+            <!-- Speed Control Slider -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs font-mono">
+                    <span class="text-slate-300">VELOCITY / AGILITY</span>
+                    <span id="speedVal" class="text-emerald-400 font-bold">1.0x</span>
+                </div>
+                <input id="speedSlider" type="range" min="0.5" max="3.0" step="0.1" value="1.0" class="w-full accent-emerald-400 bg-slate-800 rounded-lg">
+            </div>
+
+            <!-- Redact / Anonymize Toggle -->
+            <div class="flex items-center justify-between pt-2 border-t border-emerald-500/20">
+                <span class="text-xs font-mono text-slate-300">ANONYMIZE IDENTITY ([REDACTED]):</span>
+                <button id="toggleRedactBtn" class="bg-emerald-950 border border-emerald-500/40 text-emerald-400 px-3 py-1 rounded text-xs font-bold">
+                    ENABLED
+                </button>
+            </div>
+
+            <!-- Manual Stage Triggers -->
+            <div class="flex gap-2 pt-2 border-t border-emerald-500/20">
+                <button id="triggerStage1Btn" class="flex-1 bg-emerald-950/60 border border-emerald-500/40 hover:bg-emerald-900/60 text-emerald-300 py-2 rounded-lg text-xs font-bold">
+                    STAGE 1 (DISAPPEAR)
+                </button>
+                <button id="triggerStage2Btn" class="flex-1 bg-emerald-950/60 border border-emerald-500/40 hover:bg-emerald-900/60 text-emerald-300 py-2 rounded-lg text-xs font-bold">
+                    STAGE 2 (FIELDS)
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+                <button id="pauseBtn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-lg text-xs font-bold transition-all">
+                    PAUSE ANIMATION
+                </button>
+                <button id="fullscreenBtn" class="bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2.5 rounded-lg text-xs font-bold transition-all">
+                    FULLSCREEN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETUP GUIDE MODAL -->
+    <div id="guidePanel" class="fixed inset-0 z-30 bg-black/85 backdrop-blur-lg flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-black/95 border border-emerald-500/50 rounded-2xl p-6 max-w-2xl w-full glow-box relative text-emerald-400 flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+            
+            <div class="flex justify-between items-center border-b border-emerald-500/30 pb-3">
+                <h2 class="text-base font-bold tracking-widest flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 002-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    HOW TO SET AS LIVE WALLPAPER
+                </h2>
+                <button id="closeGuideBtn" class="text-slate-400 hover:text-emerald-400 text-lg font-bold">✕</button>
+            </div>
+
+            <div class="space-y-4 text-xs font-mono text-slate-300 leading-relaxed">
+                <div class="bg-emerald-950/20 border border-emerald-500/30 p-3.5 rounded-xl">
+                    <h3 class="text-emerald-400 font-bold text-sm mb-1.5">📱 Android Smartphone Setup</h3>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-300">
+                        <li>Save this file as <code class="text-emerald-300">index.html</code> on your device.</li>
+                        <li>Install <b>Web Live Wallpaper</b> or <b>KLWP</b> from Google Play.</li>
+                        <li>Select <b>Local HTML File</b> and point to <code class="text-emerald-300">index.html</code>.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-emerald-950/20 border border-emerald-500/30 p-3.5 rounded-xl">
+                    <h3 class="text-emerald-400 font-bold text-sm mb-1.5">💻 Windows Laptop Setup</h3>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-300">
+                        <li>Install <b>Lively Wallpaper</b> (Microsoft Store) or <b>Wallpaper Engine</b> (Steam).</li>
+                        <li>Drag and drop <code class="text-emerald-300">index.html</code> into the app.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-emerald-950/20 border border-emerald-500/30 p-3.5 rounded-xl">
+                    <h3 class="text-emerald-400 font-bold text-sm mb-1.5">🐧 Linux Desktop / Termux Setup</h3>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-300">
+                        <li><b>Linux:</b> Use <b>Komorebi</b> or <b>WebScreenSaver</b> pointing to local file.</li>
+                        <li><b>Termux:</b> Run <code class="text-emerald-300">termux-open index.html</code> or serve with <code class="text-emerald-300">python -m http.server 8080</code>.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-emerald-500/30 flex justify-end">
+                <button id="guideOkBtn" class="bg-emerald-500 hover:bg-emerald-400 text-black px-5 py-2 rounded-lg text-xs font-bold transition-all">
+                    GOT IT // CLOSE GUIDE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT ENGINE -->
+    <script>
+        /**
+         * KOL_TEF ANONYMOUS STEALTH MATRIX HUD ENGINE
+         * 
+         * STAGE 1: "HAKKOL TEFILLAH (everything by prayer)" + binary payload streams in,
+         *          glitches into encrypted noise, and COMPLETELY DISAPPEARS into digital dust.
+         * STAGE 2: Fields of Life sequence populates anonymized binary streams (Farming, Education, Family, Society, Technology, Governance).
+         */
+
+        const CODENAME = "kol_tef";
+        const HAKKOL_PHRASE = "HAKKOL TEFILLAH (EVERYTHING BY PRAYER)";
+        const HAKKOL_BINARY = "01101000 01100001 01101011 01101011 01101111 01101100 00100000 01110100 01100101 01100110 01101001 01101100 01101100 00100000 01110000 01100001 01100001 01111001 01100101 01100010";
+
+        // STAGE 2 FIELDS OF LIFE DATA
+        const LIFE_FIELDS = [
+            {
+                title: "FARMING & AGRICULTURE",
+                tag: "[GROWTH // SEED // HARVEST // SUSTENANCE]",
+                icon: "🌾",
+                binary: "01000110 01000001 01010010 01001101 01001001 01001110 01000111"
+            },
+            {
+                title: "TEACHING & EDUCATION",
+                tag: "[KNOWLEDGE // WISDOM // DISCIPLESHIP]",
+                icon: "📚",
+                binary: "01010100 01000101 01000001 01000011 01001000 01001001 01001110 01000111"
+            },
+            {
+                title: "FAMILY & COMMUNITY",
+                tag: "[FOUNDATION // UNITY // GENERATIONS]",
+                icon: "👨‍👩‍👧‍👦",
+                binary: "01000110 01000001 01001101 01001001 01001100 01001001 01000101 01010011"
+            },
+            {
+                title: "SOCIETY & NATIONS",
+                tag: "[PEACE // ORDER // LEADERSHIP]",
+                icon: "🌍",
+                binary: "01010011 01001111 01000011 01001001 01000101 01010011 01010100 01011001"
+            },
+            {
+                title: "TECHNOLOGY & CODE",
+                tag: "[LOGIC // CREATION // ENGINEERING]",
+                icon: "💻",
+                binary: "01010100 01000101 01000011 01001000 01001110 01001111 01001100 01001111 01000111 01001001 01000101 01010011"
+            },
+            {
+                title: "GOVERNANCE & STEWARDSHIP",
+                tag: "[JUSTICE // INTEGRITY // RIGHTEOUSNESS]",
+                icon: "🏛️",
+                binary: "01000111 01001111 01010110 01000101 01010010 01010011"
+            }
+        ];
+
+        // COLOR THEMES
+        const THEMES = {
+            green: {
+                primary: '#00ff66',
+                secondary: '#008033',
+                glow: 'rgba(0, 255, 102, 0.8)',
+                glowSoft: 'rgba(0, 255, 102, 0.3)'
+            },
+            cyan: {
+                primary: '#00f0ff',
+                secondary: '#007780',
+                glow: 'rgba(0, 240, 255, 0.8)',
+                glowSoft: 'rgba(0, 240, 255, 0.3)'
+            },
+            amber: {
+                primary: '#ff9900',
+                secondary: '#995c00',
+                glow: 'rgba(255, 153, 0, 0.8)',
+                glowSoft: 'rgba(255, 153, 0, 0.3)'
+            }
+        };
+
+        // GLOBAL APP STATE
+        let currentTheme = 'green';
+        let currentStage = 'STAGE1_TYPE'; // STAGE1_TYPE -> STAGE1_DISAPPEAR -> STAGE2_FIELDS
+        let loopCount = 1;
+        
+        let currentFieldIndex = 0;
+        let isPaused = false;
+        let speedMultiplier = 1.0;
+        let soundEnabled = false;
+        let isRedacted = true;
+        let fontSize = 16;
+        
+        let stage1Timer = null;
+        let fieldProgressInterval = null;
+        let fieldTimeElapsed = 0;
+        const FIELD_DURATION = 5500;
+
+        // WEB AUDIO API SFX SYNTHESIZER
+        let audioCtx = null;
+        function playCyberSound(type = 'type') {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+                if (type === 'type') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(400 + Math.random() * 600, now);
+                    gain.gain.setValueAtTime(0.015, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'glitch') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'disappear') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                }
+            } catch (e) {}
+        }
+
+        // CANVAS MATRIX INITIALIZATION
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let columns = 0;
+        let drops = [];
+        let dropSpeeds = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            if (window.innerWidth < 640) {
+                fontSize = 13;
+            } else if (window.innerWidth < 1024) {
+                fontSize = 15;
+            } else {
+                fontSize = 18;
+            }
+
+            columns = Math.floor(canvas.width / fontSize);
+            drops = [];
+            dropSpeeds = [];
+
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.floor(Math.random() * -50);
+                dropSpeeds[i] = (Math.random() * 0.8 + 0.6);
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // MATRIX RAIN RENDER
+        function drawMatrix() {
+            if (isPaused) return;
+
+            const theme = THEMES[currentTheme];
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = `${fontSize}px 'Fira Code', monospace`;
+
+            for (let i = 0; i < drops.length; i++) {
+                const char = Math.random() > 0.5 ? '1' : '0';
+                const x = i * fontSize;
+                const y = drops[i] * fontSize;
+
+                if (Math.random() > 0.90) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = theme.primary;
+                } else {
+                    ctx.fillStyle = theme.primary;
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.fillText(char, x, y);
+
+                if (y > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                drops[i] += dropSpeeds[i] * speedMultiplier;
+            }
+
+            // Update Dynamic Crypto Hash Signature
+            if (Math.random() > 0.85) {
+                const hashEl = document.getElementById('cryptoHash');
+                hashEl.textContent = `HASH: 0x${Math.random().toString(16).substring(2, 8).toUpperCase()}`;
+            }
+
+            // Randomize TOR Hop telemetry
+            if (Math.random() > 0.95) {
+                document.getElementById('hop1').textContent = `NODE_${Math.floor(Math.random()*90 + 10)}X`;
+                document.getElementById('hop2').textContent = `PROXY_${Math.floor(Math.random()*900 + 100)}`;
+            }
+        }
+
+        // STAGE 1 LIFECYCLE CONTROLLER (TYPE -> GLITCH -> COMPLETE DISAPPEARANCE)
+        function startStage1Sequence() {
+            currentStage = 'STAGE1_TYPE';
+            const bannerContainer = document.getElementById('stage1BannerContainer');
+            const phraseBanner = document.getElementById('phraseBanner');
+            const binaryBanner = document.getElementById('binaryBanner');
+            const statusTag = document.getElementById('stageStatusTag');
+            const telemetry = document.getElementById('telemetryStatus');
+
+            // Reset banner visibility
+            bannerContainer.style.opacity = '1';
+            bannerContainer.style.transform = 'scale(1)';
+            phraseBanner.classList.remove('glitch-active');
+            phraseBanner.textContent = '';
+            binaryBanner.textContent = '';
+            
+            statusTag.textContent = "STAGE 1: STREAMING MOTTO";
+            telemetry.textContent = "[PAYLOAD_DECRYPTING]: HAKKOL TEFILLAH";
+
+            let charIdx = 0;
+            if (stage1Timer) clearInterval(stage1Timer);
+
+            // Step 1: Type out Motto & Binary
+            stage1Timer = setInterval(() => {
+                if (isPaused) return;
+
+                if (charIdx <= HAKKOL_PHRASE.length) {
+                    phraseBanner.textContent = HAKKOL_PHRASE.substring(0, charIdx) + '█';
+                    binaryBanner.textContent = HAKKOL_BINARY.substring(0, charIdx * 3);
+                    playCyberSound('type');
+                    charIdx++;
+                } else {
+                    phraseBanner.textContent = HAKKOL_PHRASE;
+                    binaryBanner.textContent = HAKKOL_BINARY;
+                    clearInterval(stage1Timer);
+                    
+                    // Step 2: Hold & Glitch after typing finishes
+                    stage1Timer = setTimeout(() => {
+                        triggerGlitchAndDisappear();
+                    }, 2200 / speedMultiplier);
+                }
+            }, 60 / speedMultiplier);
+        }
+
+        function triggerGlitchAndDisappear() {
+            currentStage = 'STAGE1_DISAPPEAR';
+            const phraseBanner = document.getElementById('phraseBanner');
+            const binaryBanner = document.getElementById('binaryBanner');
+            const bannerContainer = document.getElementById('stage1BannerContainer');
+            const statusTag = document.getElementById('stageStatusTag');
+            const telemetry = document.getElementById('telemetryStatus');
+
+            statusTag.textContent = "STAGE 1: ENCRYPTING & DISPERSING";
+            telemetry.textContent = "[WARNING]: PAYLOAD DISPERSING INTO DUST...";
+            phraseBanner.classList.add('glitch-active');
+            playCyberSound('glitch');
+
+            // Glitch text noise substitute
+            let glitchCount = 0;
+            const glitchInterval = setInterval(() => {
+                phraseBanner.textContent = Array(15).fill(0).map(() => String.fromCharCode(33 + Math.floor(Math.random() * 90))).join('');
+                binaryBanner.textContent = Array(30).fill(0).map(() => (Math.random() > 0.5 ? '1' : '0')).join('');
+                glitchCount++;
+
+                if (glitchCount > 10) {
+                    clearInterval(glitchInterval);
+                    
+                    // Step 3: COMPLETE DISAPPEARANCE / CLEARING
+                    playCyberSound('disappear');
+                    bannerContainer.style.opacity = '0';
+                    bannerContainer.style.transform = 'scale(0.85)';
+
+                    setTimeout(() => {
+                        phraseBanner.textContent = '';
+                        binaryBanner.textContent = '';
+                        phraseBanner.classList.remove('glitch-active');
+
+                        // Transition cleanly into Stage 2
+                        startStage2Fields();
+                    }, 800);
+                }
+            }, 80);
+        }
+
+        // STAGE 2: ANONYMIZED FIELDS OF LIFE
+        function startStage2Fields() {
+            currentStage = 'STAGE2_FIELDS';
+            const card = document.getElementById('domainCard');
+            const statusTag = document.getElementById('stageStatusTag');
+            const telemetry = document.getElementById('telemetryStatus');
+
+            statusTag.textContent = "STAGE 2: PRAYER IN ALL FIELDS";
+            telemetry.textContent = "[ANONYMOUS_BUFFER_ACTIVE] // DOMAIN_ENCODING";
+
+            card.classList.remove('opacity-0', 'translate-y-6');
+            card.classList.add('opacity-100', 'translate-y-0');
+
+            setField(0);
+            startFieldTimer();
+        }
+
+        function setField(index) {
+            currentFieldIndex = index;
+            const field = LIFE_FIELDS[index];
+
+            const titleEl = document.getElementById('domainTitle');
+            const tagEl = document.getElementById('domainTag');
+            const iconEl = document.getElementById('domainIcon');
+            const stepEl = document.getElementById('domainStep');
+            const binaryEl = document.getElementById('domainBinaryText');
+
+            titleEl.textContent = isRedacted ? `[REDACTED FIELD ${index+1}]` : field.title;
+            tagEl.textContent = field.tag;
+            iconEl.textContent = field.icon;
+            stepEl.textContent = `${index + 1} / ${LIFE_FIELDS.length}`;
+            binaryEl.textContent = `PAYLOAD: ${field.icon} ${field.binary}`;
+
+            updateNavDots();
+            fieldTimeElapsed = 0;
+            playCyberSound('type');
+        }
+
+        function startFieldTimer() {
+            if (fieldProgressInterval) clearInterval(fieldProgressInterval);
+
+            fieldTimeElapsed = 0;
+            const progressEl = document.getElementById('domainProgress');
+
+            fieldProgressInterval = setInterval(() => {
+                if (isPaused) return;
+                
+                fieldTimeElapsed += 100 * speedMultiplier;
+                const percentage = Math.min((fieldTimeElapsed / FIELD_DURATION) * 100, 100);
+                progressEl.style.width = `${percentage}%`;
+
+                if (fieldTimeElapsed >= FIELD_DURATION) {
+                    fieldTimeElapsed = 0;
+                    
+                    if (currentFieldIndex < LIFE_FIELDS.length - 1) {
+                        setField(currentFieldIndex + 1);
+                    } else {
+                        // Reset back to Stage 1 Sweep/Disappear cycle
+                        clearInterval(fieldProgressInterval);
+                        resetToStage1();
+                    }
+                }
+            }, 100);
+        }
+
+        function resetToStage1() {
+            const card = document.getElementById('domainCard');
+            card.classList.add('opacity-0', 'translate-y-6');
+            card.classList.remove('opacity-100', 'translate-y-0');
+
+            loopCount++;
+            document.getElementById('sequenceLoopCount').textContent = `LOOP #${loopCount}`;
+
+            setTimeout(() => {
+                startStage1Sequence();
+            }, 600);
+        }
+
+        function updateNavDots() {
+            const container = document.getElementById('domainNavDots');
+            container.innerHTML = '';
+            
+            LIFE_FIELDS.forEach((_, idx) => {
+                const dot = document.createElement('button');
+                dot.className = `w-2.5 h-2.5 rounded-full transition-all ${
+                    idx === currentFieldIndex && currentStage === 'STAGE2_FIELDS'
+                        ? 'bg-emerald-400 w-5 glow-box' 
+                        : 'bg-slate-700 hover:bg-slate-500'
+                }`;
+                dot.title = LIFE_FIELDS[idx].title;
+                dot.onclick = () => {
+                    if (currentStage !== 'STAGE2_FIELDS') {
+                        currentStage = 'STAGE2_FIELDS';
+                        document.getElementById('domainCard').classList.remove('opacity-0', 'translate-y-6');
+                    }
+                    setField(idx);
+                    startFieldTimer();
+                };
+                container.appendChild(dot);
+            });
+        }
+
+        // ANIMATION LOOP
+        function animate() {
+            drawMatrix();
+            requestAnimationFrame(animate);
+        }
+
+        // THEME CONTROLLER
+        function setTheme(themeName) {
+            if (!THEMES[themeName]) return;
+            currentTheme = themeName;
+            const theme = THEMES[themeName];
+
+            document.documentElement.style.setProperty('--theme-color', theme.primary);
+            document.documentElement.style.setProperty('--theme-glow', theme.glow);
+            document.documentElement.style.setProperty('--theme-glow-soft', theme.glowSoft);
+
+            const logo = document.getElementById('brandLogo');
+            logo.style.color = theme.primary;
+            logo.style.textShadow = `0 0 10px ${theme.glow}, 0 0 25px ${theme.glowSoft}`;
+
+            const statusDot = document.getElementById('statusDot');
+            statusDot.style.backgroundColor = theme.primary;
+
+            const domainProgress = document.getElementById('domainProgress');
+            domainProgress.style.backgroundColor = theme.primary;
+
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                if (btn.dataset.theme === themeName) {
+                    btn.classList.add('active');
+                    btn.style.borderColor = theme.primary;
+                    btn.style.color = theme.primary;
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.borderColor = 'rgba(255,255,255,0.1)';
+                    btn.style.color = '#94a3b8';
+                }
+            });
+
+            updateNavDots();
+        }
+
+        // EVENT LISTENERS & UI SETUP
+        document.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
+            setTheme('green');
+            requestAnimationFrame(animate);
+
+            // Start lifecycle
+            startStage1Sequence();
+
+            // Toggle Audio SFX
+            const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+            toggleAudioBtn.onclick = () => {
+                soundEnabled = !soundEnabled;
+                document.getElementById('audioIcon').textContent = soundEnabled ? '🔊' : '🔇';
+                document.getElementById('audioStateText').textContent = soundEnabled ? 'SFX: ON' : 'SFX: OFF';
+                if (soundEnabled) playCyberSound('type');
+            };
+
+            // Toggle Controls Modal
+            const controlPanel = document.getElementById('controlPanel');
+            const toggleControlsBtn = document.getElementById('toggleControlsBtn');
+            const closeControlsBtn = document.getElementById('closeControlsBtn');
+
+            toggleControlsBtn.onclick = () => {
+                controlPanel.classList.remove('opacity-0', 'pointer-events-none');
+                controlPanel.classList.add('opacity-100', 'pointer-events-auto');
+            };
+
+            closeControlsBtn.onclick = () => {
+                controlPanel.classList.add('opacity-0', 'pointer-events-none');
+                controlPanel.classList.remove('opacity-100', 'pointer-events-auto');
+            };
+
+            // Guide Modal Toggle
+            const guidePanel = document.getElementById('guidePanel');
+            const toggleGuideBtn = document.getElementById('toggleGuideBtn');
+            const closeGuideBtn = document.getElementById('closeGuideBtn');
+            const guideOkBtn = document.getElementById('guideOkBtn');
+
+            const closeGuide = () => {
+                guidePanel.classList.add('opacity-0', 'pointer-events-none');
+                guidePanel.classList.remove('opacity-100', 'pointer-events-auto');
+            };
+
+            toggleGuideBtn.onclick = () => {
+                guidePanel.classList.remove('opacity-0', 'pointer-events-none');
+                guidePanel.classList.add('opacity-100', 'pointer-events-auto');
+            };
+            closeGuideBtn.onclick = closeGuide;
+            guideOkBtn.onclick = closeGuide;
+
+            // Theme Buttons
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const theme = e.currentTarget.dataset.theme;
+                    setTheme(theme);
+                };
+            });
+
+            // Redact Toggle Button
+            const toggleRedactBtn = document.getElementById('toggleRedactBtn');
+            toggleRedactBtn.onclick = () => {
+                isRedacted = !isRedacted;
+                toggleRedactBtn.textContent = isRedacted ? 'ENABLED' : 'DISABLED';
+                document.getElementById('identityTag').textContent = isRedacted ? 'kol_tef [ANONYMOUS]' : 'kol_tef [UNMASKED]';
+                if (currentStage === 'STAGE2_FIELDS') setField(currentFieldIndex);
+            };
+
+            // Velocity Slider
+            const speedSlider = document.getElementById('speedSlider');
+            const speedVal = document.getElementById('speedVal');
+            speedSlider.oninput = (e) => {
+                speedMultiplier = parseFloat(e.target.value);
+                speedVal.textContent = `${speedMultiplier.toFixed(1)}x`;
+            };
+
+            // Manual Stage Triggers
+            document.getElementById('triggerStage1Btn').onclick = () => {
+                if (fieldProgressInterval) clearInterval(fieldProgressInterval);
+                const card = document.getElementById('domainCard');
+                card.classList.add('opacity-0', 'translate-y-6');
+                startStage1Sequence();
+                controlPanel.classList.add('opacity-0', 'pointer-events-none');
+            };
+
+            document.getElementById('triggerStage2Btn').onclick = () => {
+                if (stage1Timer) clearInterval(stage1Timer);
+                document.getElementById('stage1BannerContainer').style.opacity = '0';
+                startStage2Fields();
+                controlPanel.classList.add('opacity-0', 'pointer-events-none');
+            };
+
+            // Pause Button
+            const pauseBtn = document.getElementById('pauseBtn');
+            pauseBtn.onclick = () => {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? 'RESUME ANIMATION' : 'PAUSE ANIMATION';
+            };
+
+            // Fullscreen Button
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            fullscreenBtn.onclick = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                }
+            };
+        });
+    </script>
+</body>
+</html>
+
